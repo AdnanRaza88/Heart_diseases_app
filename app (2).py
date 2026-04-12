@@ -139,32 +139,53 @@ st.markdown("### _Advanced Machine Learning with Beautiful Visualizations_")
 # ============ LOAD DATASET ============
 @st.cache_data
 def load_data():
+    # ✅ BEST: local file first
     try:
-        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
-        column_names = ['age', 'sex', 'cp', 'trestbps', 'chol', 'fbs', 'restecg',
-                       'thalach', 'exang', 'oldpeak', 'slope', 'ca', 'thal', 'target']
-        df = pd.read_csv(url, names=column_names, na_values='?')
-
-        # Fill missing values
-        numeric_cols = df.select_dtypes(include=[np.number]).columns
-        for col in numeric_cols:
-            if df[col].isnull().any():
-                df[col].fillna(df[col].median(), inplace=True)
-
-        # Convert target to binary
-        df['target'] = df['target'].apply(lambda x: 1 if x > 0 else 0)
-
+        df = pd.read_csv("heart.csv")
         return df
     except:
-        # Backup dataset
-        backup_url = "https://raw.githubusercontent.com/sid-krish/Heart-Disease-Prediction/main/data/heart.csv"
-        df = pd.read_csv(backup_url)
+        pass
+
+    # ✅ UCI dataset
+    try:
+        url = "https://archive.ics.uci.edu/ml/machine-learning-databases/heart-disease/processed.cleveland.data"
+        cols = ['age','sex','cp','trestbps','chol','fbs','restecg',
+                'thalach','exang','oldpeak','slope','ca','thal','target']
+
+        df = pd.read_csv(url, names=cols, na_values='?')
+
+        for col in df.columns:
+            df[col].fillna(df[col].median(), inplace=True)
+
         df['target'] = df['target'].apply(lambda x: 1 if x > 0 else 0)
+
         return df
 
-# Load data
+    except Exception as e:
+        st.warning("⚠️ UCI dataset failed, loading backup...")
+
+    # ✅ FINAL WORKING BACKUP (FIXED)
+    backup_url = "https://raw.githubusercontent.com/plotly/datasets/master/heart.csv"
+    df = pd.read_csv(backup_url)
+
+    # handle column naming difference
+    if 'output' in df.columns:
+        df.rename(columns={'output': 'target'}, inplace=True)
+
+    df['target'] = df['target'].apply(lambda x: 1 if x > 0 else 0)
+
+    return df
+
+
+# ============ LOAD ============
 with st.spinner("🔄 Loading dataset..."):
     df = load_data()
+
+st.success("✅ Dataset Loaded Successfully!")
+
+# ============ PREVIEW ============
+st.subheader("📊 Dataset Preview")
+st.dataframe(df.head())
 
 # ============ DASHBOARD METRICS ============
 col1, col2, col3, col4 = st.columns(4)
